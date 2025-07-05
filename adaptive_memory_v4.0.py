@@ -1598,6 +1598,16 @@ Analyze the following related memories and provide a concise summary.""",
             return self._reload_configuration_safe(True)
         return True
     
+    def reload_config(self):
+        """
+        Public method to force reload configuration from persistent store.
+        Returns True if reload was successful, False otherwise.
+        
+        This method can be called after config save to force a backend reload,
+        ensuring that the latest settings are immediately applied.
+        """
+        return self._reload_configuration_safe(force_reload=True)
+    
     def _test_configuration_management(self):
         return self._validate_configuration_integrity(self.valves) and self._ensure_configuration_persistence()
 
@@ -2705,21 +2715,22 @@ Analyze the following related memories and provide a concise summary.""",
         log_with_context('debug', f"Inlet received body keys: {list(body.keys())}",
                         component='INLET', user_id=user_id, operation='receive')
 
-        # Ensure configuration persistence at start of operation (with timeout)
+        # Felicity says: No more living in the past—your config is now as fresh as your taste in AI assistants! 💅
+        # Force reload configuration from persistent store to ensure latest settings are applied
         try:
-            config_check = await asyncio.wait_for(
-                asyncio.to_thread(self._ensure_configuration_persistence),
+            reload_success = await asyncio.wait_for(
+                asyncio.to_thread(self._reload_configuration_safe, True),  # force_reload=True
                 timeout=5.0
             )
-            if not config_check:
-                log_with_context('warning', "Configuration persistence check failed, continuing with current config",
-                               component='INLET', user_id=user_id, operation='config_check')
+            if not reload_success:
+                log_with_context('warning', "Configuration force reload failed, continuing with current config",
+                               component='INLET', user_id=user_id, operation='config_reload')
         except asyncio.TimeoutError:
-            log_with_context('warning', "Configuration persistence check timed out, continuing with current config",
-                           component='INLET', user_id=user_id, operation='config_check')
+            log_with_context('warning', "Configuration force reload timed out, continuing with current config",
+                           component='INLET', user_id=user_id, operation='config_reload')
         except Exception as e:
-            log_with_context('warning', "Configuration persistence check error, continuing with current config",
-                           component='INLET', user_id=user_id, operation='config_check', error=e)
+            log_with_context('warning', "Configuration force reload error, continuing with current config",
+                           component='INLET', user_id=user_id, operation='config_reload', error=e)
 
         # Ensure user info is present
         if not __user__ or not __user__.get("id"):
@@ -3284,21 +3295,22 @@ Analyze the following related memories and provide a concise summary.""",
                                component='OUTLET', user_id=user_id, operation='orchestration', error=e)
                 orchestration_context = None
 
-        # Ensure configuration persistence at start of operation (with timeout)
+        # Felicity says: No more living in the past—your config is now as fresh as your taste in AI assistants! 💅
+        # Force reload configuration from persistent store to ensure latest settings are applied
         try:
-            config_check = await asyncio.wait_for(
-                asyncio.to_thread(self._ensure_configuration_persistence),
+            reload_success = await asyncio.wait_for(
+                asyncio.to_thread(self._reload_configuration_safe, True),  # force_reload=True
                 timeout=5.0
             )
-            if not config_check:
-                log_with_context('warning', "Configuration persistence check failed, continuing with current config",
-                               component='OUTLET', user_id=user_id, operation='config_check')
+            if not reload_success:
+                log_with_context('warning', "Configuration force reload failed, continuing with current config",
+                               component='OUTLET', user_id=user_id, operation='config_reload')
         except asyncio.TimeoutError:
-            log_with_context('warning', "Configuration persistence check timed out, continuing with current config",
-                           component='OUTLET', user_id=user_id, operation='config_check')
+            log_with_context('warning', "Configuration force reload timed out, continuing with current config",
+                           component='OUTLET', user_id=user_id, operation='config_reload')
         except Exception as e:
-            log_with_context('warning', "Configuration persistence check error, continuing with current config",
-                           component='OUTLET', user_id=user_id, operation='config_check', error=e)
+            log_with_context('warning', "Configuration force reload error, continuing with current config",
+                           component='OUTLET', user_id=user_id, operation='config_reload', error=e)
 
         # Skip processing if user is not authenticated
         if not __user__:
